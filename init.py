@@ -4,7 +4,7 @@ try:
     Pymp_AVAILABLE = True
 except ImportError:
     Pymp_AVAILABLE = False
-    print("Note: pymp not available, using sequential processing instead of parallel.")
+    # pymp is optional - script will work fine without it using sequential processing
 
 from PIL import Image
 import os
