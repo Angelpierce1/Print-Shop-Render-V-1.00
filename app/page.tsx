@@ -5,6 +5,7 @@ import ImageUploader from '../components/ImageUploader'
 import BatchProcessor from '../components/BatchProcessor'
 import HEICConverter from '../components/HEICConverter'
 import PrintCatalog from '../components/PrintCatalog'
+import PDFProcessor from '../components/PDFProcessor'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('upload')
@@ -68,6 +69,16 @@ export default function Home() {
                 🔄 HEIC Converter
               </button>
               <button
+                onClick={() => setActiveTab('pdf')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'pdf'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                📄 PDF Processor
+              </button>
+              <button
                 onClick={() => setActiveTab('catalog')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'catalog'
@@ -88,6 +99,7 @@ export default function Home() {
               <BatchProcessor />
             )}
             {activeTab === 'heic' && <HEICConverter />}
+            {activeTab === 'pdf' && <PDFProcessor />}
             {activeTab === 'catalog' && <PrintCatalog />}
           </div>
         </div>
