@@ -1,0 +1,19 @@
+streamlit>=1.28.0
+Pillow>=10.0.0
+pillow-heif>=0.13.0
+pdf2image>=1.16.0
+PyPDF2>=3.0.0
+
+# Optional: For parallel processing in init.py (requires cmake)
+# pymp>=0.0.6
+
+# Note: pdf2image requires poppler-utils. Install with:
+# macOS: brew install poppler
+# Ubuntu/Debian: sudo apt-get install poppler-utils
+# Windows: Download poppler from https://github.com/oschwartz10612/poppler-windows/releases
+
+
+
+
+
+
