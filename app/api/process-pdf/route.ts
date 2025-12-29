@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
           
           // Set up canvas rendering
           const viewport = page.getViewport({ scale: 2.0 }) // 2x scale for better quality
-          const { createCanvas } = require('canvas')
+          const { createCanvas } = require('@napi-rs/canvas')
           const canvas = createCanvas(viewport.width, viewport.height)
           const context = canvas.getContext('2d')
 
