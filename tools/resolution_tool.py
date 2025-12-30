@@ -198,3 +198,4 @@ def _check_image_resolution(file_path: Path, min_dpi: int) -> Dict[str, Any]:
         }
 
 
+

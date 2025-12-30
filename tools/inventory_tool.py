@@ -67,3 +67,4 @@ def check_inventory(paper_stock: str, color: str, finish: str) -> Dict[str, Any]
     }
 
 
+
