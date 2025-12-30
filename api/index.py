@@ -1,12 +1,19 @@
 """Vercel serverless function for Print Shop AI Order Guardrail API."""
 
 import json
+import sys
 import traceback
 
+# Try to add path for imports (but don't fail if it doesn't work)
+try:
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+except:
+    pass
+
 def handler(req):
-    """Main handler for Vercel serverless function."""
+    """Main handler for Vercel serverless function - minimal version."""
     
-    # Handle CORS
     headers = {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
@@ -15,8 +22,10 @@ def handler(req):
     }
     
     try:
-        # Handle OPTIONS for CORS
+        # Get method
         method = getattr(req, 'method', 'GET')
+        
+        # Handle OPTIONS
         if method == "OPTIONS":
             return {
                 "statusCode": 200,
@@ -24,66 +33,48 @@ def handler(req):
                 "body": ""
             }
         
-        # Parse request body
+        # Parse body
         body = {}
         if hasattr(req, 'body') and req.body:
             try:
-                if isinstance(req.body, str):
-                    body = json.loads(req.body)
-                else:
-                    body = req.body
+                body = json.loads(req.body) if isinstance(req.body, str) else req.body
             except:
-                body = {}
+                pass
         
-        # Get query parameters
-        query = {}
-        if hasattr(req, 'query') and req.query:
-            query = req.query
+        # Get query
+        query = getattr(req, 'query', {}) or {}
         
         # Get action
         action = body.get("action") or query.get("action", "info")
         
-        # Simple response for now
-        if action == "status":
-            result = {
-                "success": True,
-                "message": "API is working",
-                "action": action,
-                "method": method
-            }
-        elif action == "test":
-            result = {
-                "success": True,
-                "message": "Test endpoint working",
-                "body_received": bool(body),
-                "query_received": bool(query)
-            }
-        else:
-            result = {
-                "success": True,
-                "message": "Print Shop AI Order Guardrail API",
-                "status": "Basic endpoint working",
-                "available_actions": ["status", "test"],
-                "note": "Full functionality requires module imports to be fixed"
-            }
+        # Return response
+        result = {
+            "success": True,
+            "message": "Print Shop API is working",
+            "action": action,
+            "method": method,
+            "python_version": sys.version,
+            "available_actions": ["info", "status", "test"]
+        }
         
         return {
             "statusCode": 200,
             "headers": headers,
             "body": json.dumps(result, default=str)
         }
-    
+        
     except Exception as e:
-        # Return detailed error
-        error_info = {
+        # Return error with full traceback
+        error_response = {
             "success": False,
             "error": str(e),
             "error_type": type(e).__name__,
-            "traceback": traceback.format_exc()
+            "traceback": traceback.format_exc(),
+            "python_version": sys.version
         }
         
         return {
             "statusCode": 500,
             "headers": headers,
-            "body": json.dumps(error_info, default=str)
+            "body": json.dumps(error_response, default=str)
         }
