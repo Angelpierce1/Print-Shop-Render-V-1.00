@@ -2,18 +2,52 @@
 
 import json
 import sys
+import traceback
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+try:
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+except Exception as e:
+    pass  # Continue even if path addition fails
 
-from agent.react_agent import ReActAgent
-from tools.inventory_tool import check_inventory
-from tools.resolution_tool import check_resolution
-from tools.pricing_tool import calculate_price
-from guardrails.spec_check_guardrail import SpecCheckGuardrail
-from guardrails.preflight_guardrail import PreflightGuardrail
-from guardrails.quote_guardrail import QuoteGuardrail
+# Try to import modules with error handling
+try:
+    from agent.react_agent import ReActAgent
+    AGENT_AVAILABLE = True
+except ImportError as e:
+    AGENT_AVAILABLE = False
+    AGENT_ERROR = str(e)
+
+try:
+    from tools.inventory_tool import check_inventory
+    INVENTORY_AVAILABLE = True
+except ImportError as e:
+    INVENTORY_AVAILABLE = False
+    INVENTORY_ERROR = str(e)
+
+try:
+    from tools.resolution_tool import check_resolution
+    RESOLUTION_AVAILABLE = True
+except ImportError as e:
+    RESOLUTION_AVAILABLE = False
+    RESOLUTION_ERROR = str(e)
+
+try:
+    from tools.pricing_tool import calculate_price
+    PRICING_AVAILABLE = True
+except ImportError as e:
+    PRICING_AVAILABLE = False
+    PRICING_ERROR = str(e)
+
+try:
+    from guardrails.spec_check_guardrail import SpecCheckGuardrail
+    from guardrails.preflight_guardrail import PreflightGuardrail
+    from guardrails.quote_guardrail import QuoteGuardrail
+    GUARDRAILS_AVAILABLE = True
+except ImportError as e:
+    GUARDRAILS_AVAILABLE = False
+    GUARDRAILS_ERROR = str(e)
 
 
 def handler(req):
@@ -28,28 +62,33 @@ def handler(req):
     }
     
     # Handle OPTIONS for CORS
-    if req.method == "OPTIONS":
+    if hasattr(req, 'method') and req.method == "OPTIONS":
         return {"statusCode": 200, "headers": headers, "body": ""}
     
     try:
-        # Parse request body
+        # Parse request - Vercel format
+        method = getattr(req, 'method', 'GET')
         body = {}
-        if req.method == "POST":
-            if hasattr(req, 'body') and req.body:
-                try:
-                    if isinstance(req.body, str):
-                        body = json.loads(req.body)
-                    else:
-                        body = req.body
-                except:
-                    body = {}
+        
+        # Try to get body from request
+        if hasattr(req, 'body'):
+            request_body = req.body
+            if request_body:
+                if isinstance(request_body, str):
+                    try:
+                        body = json.loads(request_body)
+                    except:
+                        body = {}
+                else:
+                    body = request_body
+        
+        # Get query parameters
+        query = {}
+        if hasattr(req, 'query'):
+            query = req.query or {}
         
         # Get action from body or query string
-        action = body.get("action")
-        if not action and hasattr(req, 'query') and req.query:
-            action = req.query.get("action", "info")
-        else:
-            action = action or "info"
+        action = body.get("action") or query.get("action", "info")
         
         # Route to appropriate handler
         if action == "process_order":
@@ -62,6 +101,8 @@ def handler(req):
             result = handle_calculate_price(body)
         elif action == "test_guardrails":
             result = handle_test_guardrails()
+        elif action == "status":
+            result = get_status()
         else:
             result = {
                 "success": True,
@@ -71,7 +112,8 @@ def handler(req):
                     "check_inventory", 
                     "check_resolution",
                     "calculate_price",
-                    "test_guardrails"
+                    "test_guardrails",
+                    "status"
                 ],
                 "usage": {
                     "method": "POST",
@@ -92,17 +134,13 @@ def handler(req):
         }
     
     except Exception as e:
-        import traceback
-        error_msg = str(e)
-        # Don't expose full traceback in production, but include it for debugging
-        traceback_info = traceback.format_exc() if "dev" in str(req.path).lower() else None
-        
+        # Return detailed error for debugging
         error_response = {
             "success": False,
-            "error": error_msg
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "traceback": traceback.format_exc()
         }
-        if traceback_info:
-            error_response["traceback"] = traceback_info
         
         return {
             "statusCode": 500,
@@ -111,8 +149,43 @@ def handler(req):
         }
 
 
+def get_status():
+    """Get status of all modules."""
+    return {
+        "success": True,
+        "modules": {
+            "agent": {
+                "available": AGENT_AVAILABLE,
+                "error": getattr(AGENT_AVAILABLE, 'AGENT_ERROR', None) if not AGENT_AVAILABLE else None
+            },
+            "inventory_tool": {
+                "available": INVENTORY_AVAILABLE,
+                "error": INVENTORY_ERROR if not INVENTORY_AVAILABLE else None
+            },
+            "resolution_tool": {
+                "available": RESOLUTION_AVAILABLE,
+                "error": RESOLUTION_ERROR if not RESOLUTION_AVAILABLE else None
+            },
+            "pricing_tool": {
+                "available": PRICING_AVAILABLE,
+                "error": PRICING_ERROR if not PRICING_AVAILABLE else None
+            },
+            "guardrails": {
+                "available": GUARDRAILS_AVAILABLE,
+                "error": GUARDRAILS_ERROR if not GUARDRAILS_AVAILABLE else None
+            }
+        }
+    }
+
+
 def handle_process_order(body):
     """Handle process_order action."""
+    if not AGENT_AVAILABLE:
+        return {
+            "success": False,
+            "error": f"Agent not available: {AGENT_ERROR}"
+        }
+    
     user_query = body.get("query", "")
     file_path = body.get("file_path")
     
@@ -127,6 +200,12 @@ def handle_process_order(body):
 
 def handle_check_inventory(body):
     """Handle check_inventory action."""
+    if not INVENTORY_AVAILABLE:
+        return {
+            "success": False,
+            "error": f"Inventory tool not available: {INVENTORY_ERROR}"
+        }
+    
     paper_stock = body.get("paper_stock")
     color = body.get("color", "white")
     finish = body.get("finish", "matte")
@@ -146,6 +225,12 @@ def handle_check_inventory(body):
 
 def handle_check_resolution(body):
     """Handle check_resolution action."""
+    if not RESOLUTION_AVAILABLE:
+        return {
+            "success": False,
+            "error": f"Resolution tool not available: {RESOLUTION_ERROR}"
+        }
+    
     file_path = body.get("file_path")
     
     if not file_path:
@@ -163,6 +248,12 @@ def handle_check_resolution(body):
 
 def handle_calculate_price(body):
     """Handle calculate_price action."""
+    if not PRICING_AVAILABLE:
+        return {
+            "success": False,
+            "error": f"Pricing tool not available: {PRICING_ERROR}"
+        }
+    
     paper_stock = body.get("paper_stock")
     quantity = body.get("quantity")
     width_inches = body.get("width_inches")
@@ -193,6 +284,12 @@ def handle_calculate_price(body):
 
 def handle_test_guardrails():
     """Handle test_guardrails action."""
+    if not GUARDRAILS_AVAILABLE:
+        return {
+            "success": False,
+            "error": f"Guardrails not available: {GUARDRAILS_ERROR}"
+        }
+    
     spec_guardrail = SpecCheckGuardrail()
     preflight_guardrail = PreflightGuardrail()
     quote_guardrail = QuoteGuardrail()
