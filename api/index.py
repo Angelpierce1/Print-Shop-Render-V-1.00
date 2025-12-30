@@ -156,7 +156,7 @@ def get_status():
         "modules": {
             "agent": {
                 "available": AGENT_AVAILABLE,
-                "error": getattr(AGENT_AVAILABLE, 'AGENT_ERROR', None) if not AGENT_AVAILABLE else None
+                "error": AGENT_ERROR if not AGENT_AVAILABLE else None
             },
             "inventory_tool": {
                 "available": INVENTORY_AVAILABLE,
