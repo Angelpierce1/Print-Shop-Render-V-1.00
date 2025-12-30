@@ -122,3 +122,4 @@ curl -X POST https://your-project.vercel.app/api \
 - Ensure `requirements.txt` includes all dependencies
 - Python version is automatically detected (Python 3.9+)
 
+

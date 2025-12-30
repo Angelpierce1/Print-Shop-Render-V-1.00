@@ -122,3 +122,4 @@ CRITICAL RULES:
         """Get the system prompt with capability manifest."""
         return self.system_prompt_template
 
+

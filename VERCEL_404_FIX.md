@@ -52,3 +52,4 @@ curl https://your-domain.com/api
 
 Check the deployment logs in Vercel dashboard for specific error messages.
 
+
